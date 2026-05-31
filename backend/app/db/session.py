@@ -1,0 +1,45 @@
+from sqlmodel import create_engine, Session, SQLModel
+from ..core.config import settings
+
+engine = create_engine(settings.DATABASE_URL, echo=True)
+
+
+def init_db():
+    # Import tất cả models để SQLModel nhận biết và tạo bảng
+    from ..models import User, Goal, NutritionLog, WaterLog, ChatMessage, HealthTip  # noqa: F401
+    SQLModel.metadata.create_all(engine)
+
+    # Seed data nếu cần
+    with Session(engine) as session:
+        from sqlmodel import select
+        from ..core.security import hash_password
+
+        # Seed admin
+        if not session.exec(select(User).where(User.username == "admin")).first():
+            admin_user = User(
+                username="admin",
+                email="admin@healthychat.com",
+                hashed_password=hash_password("Admin@123"),
+                first_name="Super",
+                last_name="Admin",
+                role="admin",
+            )
+            session.add(admin_user)
+            session.commit()
+
+        if not session.exec(select(HealthTip)).first():
+            tips = [
+                HealthTip(category="Dinh dưỡng", icon="restaurant", content="Đi bộ 10 phút sau bữa ăn giúp điều hoà đường huyết và cải thiện tiêu hoá đáng kể."),
+                HealthTip(category="Nước", icon="water_drop", content="Uống một ly nước ngay sau khi thức dậy giúp kích hoạt các cơ quan nội tạng và bù nước cho cơ thể."),
+                HealthTip(category="Giấc ngủ", icon="bedtime", content="Hạn chế sử dụng thiết bị điện tử 30 phút trước khi ngủ để cải thiện chất lượng giấc ngủ."),
+                HealthTip(category="Vận động", icon="fitness_center", content="Đứng dậy và vươn vai mỗi 45 phút làm việc giúp giảm căng thẳng cho cột sống và mắt."),
+                HealthTip(category="Tâm lý", icon="psychology", content="Dành 5 phút thiền định mỗi sáng giúp bạn giữ bình tĩnh và tập trung tốt hơn trong cả ngày."),
+            ]
+            for t in tips:
+                session.add(t)
+            session.commit()
+
+
+def get_session():
+    with Session(engine) as session:
+        yield session
