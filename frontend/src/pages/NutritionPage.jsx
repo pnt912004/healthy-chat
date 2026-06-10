@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import useScrollReveal from '../hooks/useScrollReveal';
 import { getNutritionSummary, getNutritionLogs, addNutritionLog, getGoal, deleteNutritionLog, getNutritionRange } from '../services/healthService';
+import foodService from '../services/foodService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const NutritionPage = () => {
@@ -10,7 +11,18 @@ const NutritionPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  
+  // Custom or manual food form
   const [newFood, setNewFood] = useState({ name: '', calories: '', protein: '', carbs: '', fat: '', meal_type: 'auto' });
+  
+  // Advanced features state
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [foodSearchText, setFoodSearchText] = useState('');
+  const [foodSearchResults, setFoodSearchResults] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [filterType, setFilterType] = useState('day'); // 'day', 'month', 'year'
   const [rangeData, setRangeData] = useState([]);
@@ -60,9 +72,40 @@ const NutritionPage = () => {
     }
   };
 
+  const fetchFoodData = async () => {
+    try {
+      const cats = await foodService.getCategories();
+      setCategories(cats);
+      const favs = await foodService.getFavorites();
+      setFavorites(favs);
+    } catch (error) {
+      console.error('Lỗi tải dữ liệu foods:', error);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, [selectedDate, filterType]);
+
+  useEffect(() => {
+    fetchFoodData();
+  }, []);
+
+  useEffect(() => {
+    if (foodSearchText.length > 2) {
+      const delaySearch = setTimeout(async () => {
+        try {
+          const res = await foodService.searchFoods(foodSearchText);
+          setFoodSearchResults(res.items);
+        } catch (e) {
+          console.error(e);
+        }
+      }, 500);
+      return () => clearTimeout(delaySearch);
+    } else {
+      setFoodSearchResults([]);
+    }
+  }, [foodSearchText]);
 
   const handleQuickAdd = async (food, forceMealType = null) => {
     let finalMealType = forceMealType;
@@ -77,13 +120,14 @@ const NutritionPage = () => {
     try {
       await addNutritionLog({
         food_name: food.name,
-        calories: food.k,
-        protein: food.p_val,
-        carbs: food.c_val,
-        fat: food.f_val,
+        calories: food.calories || food.k,
+        protein: food.protein || food.p_val || 0,
+        carbs: food.carbs || food.c_val || 0,
+        fat: food.fat || food.f_val || 0,
         meal_type: finalMealType
       });
       fetchData();
+      setShowAddModal(false);
     } catch (error) {
       alert('Không thể thêm thực phẩm.');
     }
@@ -94,13 +138,32 @@ const NutritionPage = () => {
     if (!newFood.name || !newFood.calories) return;
     await handleQuickAdd({
       name: newFood.name,
-      k: Number(newFood.calories),
-      p_val: Number(newFood.protein) || 0,
-      c_val: Number(newFood.carbs) || 0,
-      f_val: Number(newFood.fat) || 0
+      calories: Number(newFood.calories),
+      protein: Number(newFood.protein) || 0,
+      carbs: Number(newFood.carbs) || 0,
+      fat: Number(newFood.fat) || 0
     }, newFood.meal_type);
-    setShowAddModal(false);
     setNewFood({ name: '', calories: '', protein: '', carbs: '', fat: '', meal_type: 'auto' });
+  };
+
+  const handleAIEstimate = async () => {
+    if (!aiQuery) return;
+    setAiLoading(true);
+    try {
+      const result = await foodService.aiEstimateFood(aiQuery);
+      setNewFood({
+        name: result.food_name,
+        calories: result.calories,
+        protein: result.protein,
+        carbs: result.carbs,
+        fat: result.fat,
+        meal_type: 'auto'
+      });
+    } catch (error) {
+      alert('Không thể ước tính tự động.');
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const handleUndo = async () => {
@@ -114,6 +177,19 @@ const NutritionPage = () => {
     }
   };
 
+  const toggleFavorite = async (foodId, isFav) => {
+    try {
+      if (isFav) {
+        await foodService.removeFavorite(foodId);
+      } else {
+        await foodService.addFavorite(foodId);
+      }
+      fetchFoodData();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const targetCalories = goal?.daily_calorie_goal || 2400;
   const caloriesLeft = Math.max(targetCalories - (summary?.total_calories || 0), 0);
   const caloriePct = Math.min(((summary?.total_calories || 0) / targetCalories) * 100, 100);
@@ -123,12 +199,6 @@ const NutritionPage = () => {
     { id: 'lunch', label: 'Bữa Trưa', icon: 'wb_sunny' },
     { id: 'dinner', label: 'Bữa Tối', icon: 'nights_stay' },
     { id: 'snack', label: 'Bữa Phụ', icon: 'cookie' },
-  ];
-
-  const recentFoods = [
-    { name: 'Sữa Chua Hy Lạp', p: '150g', k: 120, p_val: 15, c_val: 6, f_val: 4 },
-    { name: 'Hạnh Nhân Rang',  p: '30g',  k: 170, p_val: 6, c_val: 6, f_val: 14 },
-    { name: 'Salad Quinoa',    p: '200g', k: 310, p_val: 10, c_val: 45, f_val: 12 },
   ];
 
   return (
@@ -170,7 +240,7 @@ const NutritionPage = () => {
             <input type="text" 
                    value={searchQuery}
                    onChange={(e) => setSearchQuery(e.target.value)}
-                   placeholder="Tìm thực phẩm..." className="input-field pl-12" />
+                   placeholder="Lọc nhật ký..." className="input-field pl-12" />
             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
           </div>
         </div>
@@ -231,7 +301,7 @@ const NutritionPage = () => {
         {filterType === 'day' ? (
           <div className="lg:col-span-2 flex flex-col gap-lg">
             {mealTypes.map((type, typeIdx) => {
-            const mealLogs = (logs || []).filter(l => (l.meal_type || 'snack') === type.id && (!searchQuery || l.food_name.toLowerCase().includes(searchQuery.toLowerCase())));
+            const mealLogs = (logs || []).filter(l => (l.meal_type || 'snack') === type.id && (!searchQuery || (l.food_name || '').toLowerCase().includes(searchQuery.toLowerCase())));
             const mealCalories = mealLogs.reduce((acc, curr) => acc + (curr.calories || 0), 0);
             
             return (
@@ -273,7 +343,7 @@ const NutritionPage = () => {
                       <p className="text-outline italic text-body-sm">Chưa có nhật ký {type.label.toLowerCase()}</p>
                     </div>
                   )}
-                  <button onClick={() => setShowAddModal(true)}
+                  <button onClick={() => { setNewFood({...newFood, meal_type: type.id}); setShowAddModal(true); }}
                           className="flex items-center gap-2 text-primary font-bold text-body-sm hover:underline">
                     <span className="material-symbols-outlined text-sm">add_circle</span>Thêm Thực Phẩm
                   </button>
@@ -325,10 +395,10 @@ const NutritionPage = () => {
             </div>
           </div>
 
-          {/* Thực phẩm thường dùng */}
+          {/* Món Ăn Yêu Thích */}
           <div className="card reveal reveal-delay-1">
             <div className="flex items-center justify-between mb-md">
-              <h3 className="text-h3 font-h3">Thường Dùng</h3>
+              <h3 className="text-h3 font-h3">Món Yêu Thích</h3>
               <div className="flex items-center gap-sm">
                 {logs && logs.length > 0 && (
                   <button onClick={handleUndo} className="flex items-center gap-1 text-on-surface-variant hover:text-red-500 text-label-sm font-semibold transition-colors">
@@ -336,21 +406,30 @@ const NutritionPage = () => {
                     Hoàn tác
                   </button>
                 )}
-                <span className="material-symbols-outlined text-outline">history</span>
+                <span className="material-symbols-outlined text-outline">favorite</span>
               </div>
             </div>
-            <div className="flex flex-col gap-sm">
-              {recentFoods.map((food) => (
-                <div key={food.name} 
-                     onClick={() => handleQuickAdd(food)}
-                     className="flex items-center justify-between p-2 hover:bg-surface-container-low rounded-lg transition-all cursor-pointer group">
-                  <div>
-                    <p className="text-body-sm font-semibold">{food.name}</p>
-                    <p className="text-xs text-outline">{food.p} • {food.k} kcal</p>
+            <div className="flex flex-col gap-sm max-h-60 overflow-y-auto pr-2">
+              {favorites.length > 0 ? favorites.map((fav) => (
+                <div key={fav.id} 
+                     className="flex items-center justify-between p-2 hover:bg-surface-container-low rounded-lg transition-all group">
+                  <div className="flex-1 cursor-pointer" onClick={() => handleQuickAdd({
+                    name: fav.food.name,
+                    calories: fav.food.calories_per_100g,
+                    protein: fav.food.protein_per_100g,
+                    carbs: fav.food.carbs_per_100g,
+                    fat: fav.food.fat_per_100g
+                  })}>
+                    <p className="text-body-sm font-semibold">{fav.food.name}</p>
+                    <p className="text-xs text-outline">{fav.food.default_portion_g}g • {fav.food.calories_per_100g} kcal</p>
                   </div>
-                  <span className="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity">add</span>
+                  <button onClick={() => toggleFavorite(fav.food.id, true)}>
+                    <span className="material-symbols-outlined text-primary text-sm">favorite</span>
+                  </button>
                 </div>
-              ))}
+              )) : (
+                <p className="text-outline text-sm italic">Chưa có món yêu thích</p>
+              )}
             </div>
           </div>
 
@@ -365,18 +444,82 @@ const NutritionPage = () => {
         </div>
       </div>
 
-      {/* Add Food Modal */}
+      {/* Add Food Modal with Smart Search */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-surface rounded-xl p-lg w-full max-w-md">
-            <h3 className="text-h3 font-h3 mb-md">Thêm Thực Phẩm Mới</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
+          <div className="bg-surface rounded-xl p-lg w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-h3 font-h3 mb-md">Thêm Thực Phẩm</h3>
+            
+            {/* AI Smart Input */}
+            <div className="bg-primary/5 rounded-lg p-md mb-md border border-primary/20">
+              <p className="text-body-sm font-semibold text-primary mb-2 flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm">magic_button</span> Ước tính bằng AI
+              </p>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Vd: 1 bát phở bò, 2 quả trứng luộc..." 
+                  className="input-field flex-1 text-sm"
+                  value={aiQuery}
+                  onChange={e => setAiQuery(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAIEstimate()}
+                />
+                <button 
+                  onClick={handleAIEstimate} 
+                  disabled={aiLoading}
+                  className="bg-primary text-on-primary px-3 rounded-lg flex items-center justify-center"
+                >
+                  {aiLoading ? <span className="material-symbols-outlined animate-spin">refresh</span> : 'Phân tích'}
+                </button>
+              </div>
+            </div>
+
+            {/* Manual Form */}
             <form onSubmit={handleAddCustomFood} className="flex flex-col gap-sm">
-              <input required placeholder="Tên món ăn" className="input-field" value={newFood.name} onChange={e => setNewFood({...newFood, name: e.target.value})} />
-              <input required type="number" placeholder="Calo (kcal)" className="input-field" value={newFood.calories} onChange={e => setNewFood({...newFood, calories: e.target.value})} />
+              <div className="relative">
+                <input 
+                  required 
+                  placeholder="Tìm hoặc nhập tên món ăn..." 
+                  className="input-field w-full" 
+                  value={newFood.name} 
+                  onChange={e => {
+                    setNewFood({...newFood, name: e.target.value});
+                    setFoodSearchText(e.target.value);
+                  }} 
+                />
+                {foodSearchResults.length > 0 && foodSearchText.length > 2 && (
+                  <div className="absolute top-full left-0 right-0 bg-surface shadow-lg rounded-lg border border-outline-variant mt-1 z-50 max-h-48 overflow-y-auto">
+                    {foodSearchResults.map(f => {
+                      const isFav = favorites.some(fav => fav.food_id === f.id);
+                      return (
+                      <div key={f.id} className="p-2 border-b border-outline-variant flex justify-between items-center hover:bg-surface-container cursor-pointer">
+                        <div onClick={() => {
+                          setNewFood({
+                            ...newFood,
+                            name: f.name,
+                            calories: f.calories_per_100g,
+                            protein: f.protein_per_100g,
+                            carbs: f.carbs_per_100g,
+                            fat: f.fat_per_100g
+                          });
+                          setFoodSearchResults([]);
+                        }}>
+                          <p className="text-body-sm font-bold">{f.name}</p>
+                          <p className="text-xs text-outline">{f.calories_per_100g} kcal / 100g</p>
+                        </div>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); toggleFavorite(f.id, isFav); }}>
+                          <span className={`material-symbols-outlined text-sm ${isFav ? 'text-primary font-bold' : 'text-outline'}`}>favorite</span>
+                        </button>
+                      </div>
+                    )})}
+                  </div>
+                )}
+              </div>
+              <input required type="number" step="0.1" placeholder="Calo (kcal)" className="input-field" value={newFood.calories} onChange={e => setNewFood({...newFood, calories: e.target.value})} />
               <div className="grid grid-cols-3 gap-sm">
-                <input type="number" placeholder="Protein (g)" className="input-field" value={newFood.protein} onChange={e => setNewFood({...newFood, protein: e.target.value})} />
-                <input type="number" placeholder="Carbs (g)" className="input-field" value={newFood.carbs} onChange={e => setNewFood({...newFood, carbs: e.target.value})} />
-                <input type="number" placeholder="Fat (g)" className="input-field" value={newFood.fat} onChange={e => setNewFood({...newFood, fat: e.target.value})} />
+                <input type="number" step="0.1" placeholder="Protein (g)" className="input-field" value={newFood.protein} onChange={e => setNewFood({...newFood, protein: e.target.value})} />
+                <input type="number" step="0.1" placeholder="Carbs (g)" className="input-field" value={newFood.carbs} onChange={e => setNewFood({...newFood, carbs: e.target.value})} />
+                <input type="number" step="0.1" placeholder="Fat (g)" className="input-field" value={newFood.fat} onChange={e => setNewFood({...newFood, fat: e.target.value})} />
               </div>
               <div className="mt-sm">
                 <select className="input-field appearance-none cursor-pointer" value={newFood.meal_type} onChange={e => setNewFood({...newFood, meal_type: e.target.value})}>

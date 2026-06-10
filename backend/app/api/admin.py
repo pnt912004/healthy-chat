@@ -11,6 +11,8 @@ from ..models.nutrition_log import NutritionLog
 from ..models.water_log import WaterLog
 from ..models.health_tip import HealthTip
 from ..models.exercise_log import ExerciseLog
+from ..models.sleep_log import SleepLog
+from ..models.mood_log import MoodLog
 
 from ..schemas.user import UserOut
 from ..schemas.admin import DashboardStats, UserUpdateAdmin, AdminReply
@@ -37,12 +39,17 @@ def get_dashboard_stats(
     total_nutrition_logs = session.exec(select(func.count(NutritionLog.id))).one()
     total_water_logs = session.exec(select(func.count(WaterLog.id))).one()
     total_exercise_logs = session.exec(select(func.count(ExerciseLog.id))).one()
+    total_sleep_logs = session.exec(select(func.count(SleepLog.id))).one()
+    total_mood_logs = session.exec(select(func.count(MoodLog.id))).one()
     
     active_chat_users = session.exec(select(ChatMessage.user_id).where(ChatMessage.created_at >= today_start)).all()
     active_nutrition_users = session.exec(select(NutritionLog.user_id).where(NutritionLog.created_at >= today_start)).all()
     active_water_users = session.exec(select(WaterLog.user_id).where(WaterLog.created_at >= today_start)).all()
     active_exercise_users = session.exec(select(ExerciseLog.user_id).where(ExerciseLog.created_at >= today_start)).all()
-    active_users_today = len(set(active_chat_users + active_nutrition_users + active_water_users + active_exercise_users))
+    active_sleep_users = session.exec(select(SleepLog.user_id).where(SleepLog.created_at >= today_start)).all()
+    active_mood_users = session.exec(select(MoodLog.user_id).where(MoodLog.created_at >= today_start)).all()
+    
+    active_users_today = len(set(active_chat_users + active_nutrition_users + active_water_users + active_exercise_users + active_sleep_users + active_mood_users))
 
     return DashboardStats(
         total_users=total_users,
@@ -53,6 +60,8 @@ def get_dashboard_stats(
         total_nutrition_logs=total_nutrition_logs,
         total_water_logs=total_water_logs,
         total_exercise_logs=total_exercise_logs,
+        total_sleep_logs=total_sleep_logs,
+        total_mood_logs=total_mood_logs,
         active_users_today=active_users_today
     )
 
@@ -124,6 +133,8 @@ def delete_user(
     session.exec(delete(NutritionLog).where(NutritionLog.user_id == user_id))
     session.exec(delete(WaterLog).where(WaterLog.user_id == user_id))
     session.exec(delete(ExerciseLog).where(ExerciseLog.user_id == user_id))
+    session.exec(delete(SleepLog).where(SleepLog.user_id == user_id))
+    session.exec(delete(MoodLog).where(MoodLog.user_id == user_id))
 
     session.delete(user)
     session.commit()
@@ -282,3 +293,92 @@ def mark_admin_chat_read(
     )
     session.commit()
     return {"message": "Đã đánh dấu đọc"}
+
+# Foods Management
+from ..models.food import Food
+from ..schemas.food import FoodCreate, FoodOut
+
+@router.get("/foods", response_model=List[FoodOut])
+def get_admin_foods(
+    skip: int = 0,
+    limit: int = 100,
+    search: str | None = None,
+    is_verified: bool | None = None,
+    session: Session = Depends(get_session),
+    current_admin: User = Depends(get_current_admin)
+):
+    from sqlalchemy import or_
+    query = select(Food)
+    if search:
+        query = query.where(or_(Food.name.ilike(f"%{search}%"), Food.name_en.ilike(f"%{search}%")))
+    if is_verified is not None:
+        query = query.where(Food.is_verified == is_verified)
+        
+    foods = session.exec(query.order_by(Food.id.desc()).offset(skip).limit(limit)).all()
+    return foods
+
+@router.post("/foods", response_model=FoodOut)
+def create_admin_food(
+    food_in: FoodCreate,
+    session: Session = Depends(get_session),
+    current_admin: User = Depends(get_current_admin)
+):
+    food = Food(**food_in.model_dump(), is_verified=True, source="admin")
+    session.add(food)
+    session.commit()
+    session.refresh(food)
+    return food
+
+@router.put("/foods/{food_id}", response_model=FoodOut)
+def update_admin_food(
+    food_id: int,
+    food_in: FoodCreate,
+    session: Session = Depends(get_session),
+    current_admin: User = Depends(get_current_admin)
+):
+    food = session.get(Food, food_id)
+    if not food:
+        raise HTTPException(status_code=404, detail="Food không tồn tại")
+        
+    update_data = food_in.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(food, key, value)
+        
+    session.add(food)
+    session.commit()
+    session.refresh(food)
+    return food
+
+@router.delete("/foods/{food_id}")
+def delete_admin_food(
+    food_id: int,
+    session: Session = Depends(get_session),
+    current_admin: User = Depends(get_current_admin)
+):
+    food = session.get(Food, food_id)
+    if not food:
+        raise HTTPException(status_code=404, detail="Food không tồn tại")
+        
+    from sqlalchemy import delete
+    from ..models.favorite_food import FavoriteFood
+    session.exec(delete(FavoriteFood).where(FavoriteFood.food_id == food_id))
+    
+    session.delete(food)
+    session.commit()
+    return {"message": "Đã xóa Food thành công"}
+
+@router.patch("/foods/{food_id}/verify", response_model=FoodOut)
+def verify_admin_food(
+    food_id: int,
+    session: Session = Depends(get_session),
+    current_admin: User = Depends(get_current_admin)
+):
+    food = session.get(Food, food_id)
+    if not food:
+        raise HTTPException(status_code=404, detail="Food không tồn tại")
+        
+    food.is_verified = True
+    session.add(food)
+    session.commit()
+    session.refresh(food)
+    return food

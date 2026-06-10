@@ -39,6 +39,21 @@ def init_db():
                 session.add(t)
             session.commit()
 
+        # Seed foods
+        import sys
+        import os
+        # Need to append the parent dir to import seed_foods
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        backend_dir = os.path.abspath(os.path.join(current_dir, "../../"))
+        if backend_dir not in sys.path:
+            sys.path.append(backend_dir)
+            
+        try:
+            from seed_foods import run_seed
+            run_seed()
+        except Exception as e:
+            print("Failed to seed foods:", e)
+
 
 def get_session():
     with Session(engine) as session:

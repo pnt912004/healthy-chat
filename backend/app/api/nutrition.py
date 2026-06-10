@@ -58,6 +58,27 @@ def add_log(
     return log
 
 
+@router.put("/logs/{log_id}", response_model=NutritionLogOut)
+def update_log(
+    log_id: int,
+    body: NutritionLogCreate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    log = session.get(NutritionLog, log_id)
+    if not log or log.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Không tìm thấy nhật ký")
+    
+    update_data = body.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(log, key, value)
+        
+    session.add(log)
+    session.commit()
+    session.refresh(log)
+    return log
+
+
 @router.delete("/logs/{log_id}")
 def delete_log(
     log_id: int,

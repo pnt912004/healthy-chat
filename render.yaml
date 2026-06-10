@@ -1,0 +1,34 @@
+services:
+  # ─── Backend FastAPI ──────────────────────────────────────────────────────────
+  - type: web
+    name: healthychat-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    plan: free
+    region: singapore  # Gần Việt Nam nhất
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: healthychat-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true   # Render tự tạo random key an toàn
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 10080
+      - key: GEMINI_API_KEY
+        sync: false           # Bạn tự nhập trong Render dashboard
+      - key: ENVIRONMENT
+        value: production
+    healthCheckPath: /health
+
+  # ─── PostgreSQL Database ──────────────────────────────────────────────────────
+databases:
+  - name: healthychat-db
+    plan: free
+    region: singapore
+    databaseName: healthychat
+    user: healthychat_user

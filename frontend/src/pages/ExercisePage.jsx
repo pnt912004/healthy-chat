@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import useScrollReveal from '../hooks/useScrollReveal';
-import { getExerciseSummary, addExerciseLog, deleteExerciseLog, getExerciseWeekly, getExerciseRange } from '../services/exerciseService';
+import { getExerciseSummary, addExerciseLog, deleteExerciseLog, getExerciseWeekly, getExerciseRange, getExerciseLogs } from '../services/exerciseService';
 import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const quickActivities = [

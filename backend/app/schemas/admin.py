@@ -10,6 +10,8 @@ class DashboardStats(BaseModel):
     total_nutrition_logs: int
     total_water_logs: int
     total_exercise_logs: int
+    total_sleep_logs: int
+    total_mood_logs: int
     active_users_today: int
 
 class UserUpdateAdmin(BaseModel):

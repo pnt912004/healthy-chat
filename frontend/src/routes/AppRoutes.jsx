@@ -23,6 +23,8 @@ import AIAssistantPage   from '../pages/AIAssistantPage';
 import NutritionPage     from '../pages/NutritionPage';
 import WaterTrackerPage  from '../pages/WaterTrackerPage';
 import ExercisePage      from '../pages/ExercisePage';
+import WellnessPage      from '../pages/WellnessPage';
+import ReportsPage       from '../pages/ReportsPage';
 import SettingsPage      from '../pages/SettingsPage';
 
 const AppRoutes = () => {
@@ -48,6 +50,8 @@ const AppRoutes = () => {
           <Route path="/nutrition"  element={<NutritionPage />} />
           <Route path="/water"      element={<WaterTrackerPage />} />
           <Route path="/exercise"   element={<ExercisePage />} />
+          <Route path="/wellness"   element={<WellnessPage />} />
+          <Route path="/reports"    element={<ReportsPage />} />
           <Route path="/goals"      element={<GoalsPage />} />
           <Route path="/profile"    element={<ProfilePage />} />
           <Route path="/settings"   element={<SettingsPage />} />

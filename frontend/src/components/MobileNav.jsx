@@ -6,10 +6,9 @@ import { Link, useLocation } from 'react-router-dom';
 const mobileNavItems = [
   { label: 'Tổng Quan', to: '/dashboard', icon: 'dashboard' },
   { label: 'Dinh Dưỡng', to: '/nutrition', icon: 'restaurant' },
-  { label: 'Nước', to: '/water', icon: 'water_drop' },
   { label: 'Bài Tập', to: '/exercise', icon: 'fitness_center' },
+  { label: 'Sức Khỏe', to: '/wellness', icon: 'bedtime' },
   { label: 'AI', to: '/ai', icon: 'smart_toy' },
-  { label: 'Mục Tiêu', to: '/goals', icon: 'track_changes' },
 ];
 
 const MobileNav = () => {

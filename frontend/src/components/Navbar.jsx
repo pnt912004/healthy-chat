@@ -3,6 +3,7 @@
 
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import NotificationBell from './NotificationBell';
 
 const navItems = [
   { label: 'Trang Chủ',  to: '/' },
@@ -60,10 +61,7 @@ const Navbar = () => {
           
           {isAuthenticated ? (
             <>
-              <button onClick={() => alert('Tính năng thông báo đang phát triển!')} className="p-2 text-on-surface-variant dark:text-slate-300 hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-slate-800 rounded-lg transition-all"
-                      title="Thông báo">
-                <span className="material-symbols-outlined">notifications</span>
-              </button>
+              <NotificationBell />
               <button onClick={logout}
                       className="hidden sm:flex items-center gap-1 px-md py-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200
                                  rounded-lg text-label-md font-label-md hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors

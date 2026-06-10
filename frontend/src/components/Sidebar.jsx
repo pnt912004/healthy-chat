@@ -8,6 +8,8 @@ const sideItems = [
   { label: 'Dinh Dưỡng',      to: '/nutrition',  icon: 'restaurant' },
   { label: 'Theo Dõi Nước',   to: '/water',      icon: 'water_drop' },
   { label: 'Bài Tập',         to: '/exercise',   icon: 'fitness_center' },
+  { label: 'Sức Khỏe',        to: '/wellness',   icon: 'bedtime' },
+  { label: 'Báo Cáo',         to: '/reports',    icon: 'assessment' },
   { label: 'Mục Tiêu',        to: '/goals',      icon: 'track_changes' },
   { label: 'Trợ Lý AI',       to: '/ai',         icon: 'smart_toy' },
   { label: 'Hồ Sơ',           to: '/profile',    icon: 'person' },
