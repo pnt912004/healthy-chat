@@ -3,7 +3,7 @@ from sqlmodel import SQLModel, Field
 
 class ReminderSetting(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="user.id", unique=True)
+    user_id: int = Field(foreign_key="users.id", unique=True)
     water_reminder: bool = Field(default=True)
     water_interval_hours: int = Field(default=2)
     meal_reminder: bool = Field(default=True)

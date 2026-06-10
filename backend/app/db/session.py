@@ -6,7 +6,11 @@ engine = create_engine(settings.DATABASE_URL, echo=True)
 
 def init_db():
     # Import tất cả models để SQLModel nhận biết và tạo bảng
-    from ..models import User, Goal, NutritionLog, WaterLog, ChatMessage, HealthTip  # noqa: F401
+    from ..models import (  # noqa: F401
+        User, Goal, NutritionLog, WaterLog, ChatMessage, HealthTip,
+        ExerciseLog, SleepLog, MoodLog, Food, FavoriteFood,
+        Notification, ReminderSetting
+    )
     SQLModel.metadata.create_all(engine)
 
     # Seed data nếu cần
