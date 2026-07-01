@@ -7,7 +7,6 @@ const mobileNavItems = [
   { label: 'Tổng Quan', to: '/dashboard', icon: 'dashboard' },
   { label: 'Dinh Dưỡng', to: '/nutrition', icon: 'restaurant' },
   { label: 'Bài Tập', to: '/exercise', icon: 'fitness_center' },
-  { label: 'Sức Khỏe', to: '/wellness', icon: 'bedtime' },
   { label: 'AI', to: '/ai', icon: 'smart_toy' },
 ];
 

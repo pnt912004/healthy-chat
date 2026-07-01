@@ -13,11 +13,30 @@ class GoalCreate(BaseModel):
     body_fat_percentage: Optional[float] = None
     weekly_goal_rate: Optional[float] = 0.5
     daily_calorie_goal: Optional[float] = None
+    daily_water_target_ml: Optional[int] = 2500
+    daily_sleep_target_hours: Optional[float] = 8.0
+    daily_exercise_target_minutes: Optional[int] = 30
+    daily_protein_target: Optional[float] = None
+    daily_carbs_target: Optional[float] = None
+    daily_fat_target: Optional[float] = None
 
 
-
-class GoalUpdate(GoalCreate):
-    pass
+class GoalUpdate(BaseModel):
+    current_weight: Optional[float] = None
+    height: Optional[float] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    activity_level: Optional[str] = None
+    target_weight: Optional[float] = None
+    body_fat_percentage: Optional[float] = None
+    weekly_goal_rate: Optional[float] = None
+    daily_calorie_goal: Optional[float] = None
+    daily_water_target_ml: Optional[int] = None
+    daily_sleep_target_hours: Optional[float] = None
+    daily_exercise_target_minutes: Optional[int] = None
+    daily_protein_target: Optional[float] = None
+    daily_carbs_target: Optional[float] = None
+    daily_fat_target: Optional[float] = None
 
 
 class TDEERequest(BaseModel):
@@ -57,6 +76,12 @@ class GoalOut(BaseModel):
     bmi: Optional[float]
     daily_calorie_goal: Optional[float]
     estimated_days_to_target: Optional[int] = None
+    daily_water_target_ml: Optional[int] = None
+    daily_sleep_target_hours: Optional[float] = None
+    daily_exercise_target_minutes: Optional[int] = None
+    daily_protein_target: Optional[float] = None
+    daily_carbs_target: Optional[float] = None
+    daily_fat_target: Optional[float] = None
     created_at: datetime
     updated_at: datetime
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { reportService } from '../services/reportService';
+import { getGoal } from '../services/healthService';
 import dayjs from 'dayjs';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -12,6 +13,7 @@ const ReportsPage = () => {
   const [activeTab, setActiveTab] = useState('weekly');
   const [weeklyData, setWeeklyData] = useState(null);
   const [healthScore, setHealthScore] = useState(null);
+  const [userGoal, setUserGoal] = useState(null);
   const [aiReview, setAiReview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
@@ -25,6 +27,9 @@ const ReportsPage = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
+      const goalRes = await getGoal().catch(() => null);
+      setUserGoal(goalRes);
+      
       if (activeTab === 'weekly') {
         const [report, score] = await Promise.all([
           reportService.getWeeklyReport(),
@@ -33,10 +38,11 @@ const ReportsPage = () => {
         setWeeklyData(report);
         setHealthScore(score);
       } else {
-        // Simple monthly setup
-        const report = await reportService.getMonthlyReport();
-        setWeeklyData(report); // Reusing state for simplicity in UI
-        const score = await reportService.getHealthScore();
+        const [report, score] = await Promise.all([
+          reportService.getMonthlyReport(),
+          reportService.getHealthScore()
+        ]);
+        setWeeklyData(report);
         setHealthScore(score);
       }
     } catch (error) {
@@ -131,17 +137,25 @@ const ReportsPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Trung bình Calo nạp</h3>
-          <p className="text-3xl font-bold mt-2 text-primary-600">{weeklyData?.avg_calories_consumed?.toFixed(0) || 0}</p>
+          <p className="text-3xl font-bold mt-2 text-primary-600">
+            {weeklyData?.avg_calories_consumed?.toFixed(0) || 0}
+            <span className="text-sm font-normal text-gray-400 ml-1">/ {userGoal?.daily_calorie_goal || 2000}</span>
+          </p>
           <p className="text-xs text-gray-400 mt-1">kcal/ngày</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Trung bình Nước uống</h3>
-          <p className="text-3xl font-bold mt-2 text-blue-500">{weeklyData?.avg_water_ml?.toFixed(0) || 0}</p>
+          <p className="text-3xl font-bold mt-2 text-blue-500">
+            {weeklyData?.avg_water_ml?.toFixed(0) || 0}
+            <span className="text-sm font-normal text-gray-400 ml-1">/ {userGoal?.daily_water_target_ml || 2500}</span>
+          </p>
           <p className="text-xs text-gray-400 mt-1">ml/ngày</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Thời gian tập luyện</h3>
-          <p className="text-3xl font-bold mt-2 text-green-500">{weeklyData?.total_exercise_minutes || 0}</p>
+          <p className="text-3xl font-bold mt-2 text-green-500">
+            {weeklyData?.total_exercise_minutes || 0}
+          </p>
           <p className="text-xs text-gray-400 mt-1">phút / {activeTab === 'weekly' ? 'tuần' : 'tháng'}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
@@ -254,7 +268,7 @@ const ReportsPage = () => {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h2 className="text-lg font-bold mb-6">Lượng Calo Nạp (7 Ngày Qua)</h2>
+          <h2 className="text-lg font-bold mb-6">Lượng Calo Nạp ({activeTab === 'weekly' ? '7 Ngày Qua' : 'Tháng Này'})</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weeklyData?.daily_summaries || []}>
@@ -278,7 +292,7 @@ const ReportsPage = () => {
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h2 className="text-lg font-bold mb-6">Lượng Nước Uống (7 Ngày Qua)</h2>
+          <h2 className="text-lg font-bold mb-6">Lượng Nước Uống ({activeTab === 'weekly' ? '7 Ngày Qua' : 'Tháng Này'})</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={weeklyData?.daily_summaries || []}>

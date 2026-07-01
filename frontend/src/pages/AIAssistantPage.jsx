@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { sendMessage as sendChat, getChatHistory, getChatSessions } from '../services/chatService';
-import { getCurrentUser, logout } from '../services/authService';
+import { getCurrentUser } from '../services/authService';
+import { getGoal } from '../services/healthService';
 
 const quickSuggestions = [
   { icon: 'bedtime',     label: 'Mẹo Ngủ Ngon' },
@@ -14,13 +15,24 @@ const AIAssistantPage = () => {
   const [sessions, setSessions] = useState([]);
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [input, setInput]       = useState('');
+  const [userContext, setUserContext] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
   const user = getCurrentUser();
 
   useEffect(() => {
     fetchSessions();
+    fetchGoalContext();
   }, []);
+
+  const fetchGoalContext = async () => {
+    try {
+      const goal = await getGoal();
+      if (goal) {
+        setUserContext(`[Context của tôi: Tuổi ${goal.age}, Cân nặng ${goal.current_weight}kg, Mục tiêu: ${goal.daily_calorie_goal}kcal] `);
+      }
+    } catch (e) {}
+  };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -71,7 +83,8 @@ const AIAssistantPage = () => {
     setLoading(true);
 
     try {
-      const response = await sendChat(text, currentSessionId);
+      const contextPrefix = (messages.length === 0 && userContext) ? userContext : '';
+      const response = await sendChat(contextPrefix + text, currentSessionId);
       setMessages(prev => [...prev, response.ai_message]);
       if (!currentSessionId) {
         setCurrentSessionId(response.session_id);

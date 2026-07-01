@@ -47,9 +47,11 @@ class ComparisonReport(BaseModel):
 class HealthScore(BaseModel):
     date: date
     total_score: float # 0-100
-    nutrition_score: float # 0-40
-    water_score: float # 0-30
-    consistency_score: float # 0-30
+    nutrition_score: float # 0-30
+    water_score: float # 0-20
+    exercise_score: float # 0-20
+    sleep_score: float # 0-15
+    consistency_score: float # 0-15
 
 class AIReview(BaseModel):
     observations: List[str]

@@ -15,6 +15,7 @@ from ..schemas.exercise import (
     ExerciseRange
 )
 from ..core.security import get_current_user
+from ..models.goal import Goal
 
 router = APIRouter(prefix="/exercise", tags=["Exercise Tracker"])
 
@@ -37,10 +38,11 @@ def _day_range(day: date):
     end   = datetime.combine(day, datetime.max.time())
     return start, end
 
-def _calculate_calories(exercise_type: str, intensity: str, duration_minutes: int) -> float:
+def _calculate_calories(exercise_type: str, intensity: str, duration_minutes: int, weight: float) -> float:
     rates = CALORIES_PER_MINUTE.get(exercise_type, DEFAULT_CALORIES_PER_MINUTE)
     rate = rates.get(intensity.lower(), rates["moderate"])
-    return rate * duration_minutes
+    adjusted_rate = rate * (weight / 70.0) if weight else rate
+    return adjusted_rate * duration_minutes
 
 @router.get("/logs", response_model=List[ExerciseLogOut])
 def get_logs(
@@ -65,9 +67,14 @@ def add_log(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
+    if not 0 < body.duration_minutes <= 480:
+        raise HTTPException(status_code=400, detail="Thời gian tập không hợp lệ (1-480 phút)")
+        
     calories = body.calories_burned
     if calories is None:
-        calories = _calculate_calories(body.exercise_type, body.intensity, body.duration_minutes)
+        goal = session.exec(select(Goal).where(Goal.user_id == current_user.id)).first()
+        weight = goal.current_weight if goal and goal.current_weight else 70.0
+        calories = _calculate_calories(body.exercise_type, body.intensity, body.duration_minutes, weight)
 
     log = ExerciseLog(
         user_id=current_user.id,

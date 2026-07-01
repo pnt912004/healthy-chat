@@ -7,11 +7,14 @@ from ..db.session import get_session
 from ..models.user import User
 from ..models.water_log import WaterLog
 from ..schemas.water import WaterLogCreate, WaterLogOut, WaterSummary, WaterWeekly, WaterDayBar
+from ..models.goal import Goal
 from ..core.security import get_current_user
 
 router = APIRouter(prefix="/water", tags=["Water Tracker"])
 
-WATER_GOAL_ML = 2500  # mặc định 2.5L
+def _get_water_goal(session: Session, user_id: int) -> int:
+    goal = session.exec(select(Goal).where(Goal.user_id == user_id)).first()
+    return goal.daily_water_target_ml if goal and getattr(goal, 'daily_water_target_ml', None) else 2500
 
 DAY_LABELS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
 
@@ -101,14 +104,15 @@ def get_summary(
     ).all()
 
     total = sum(l.amount_ml for l in logs)
-    pct   = min(round(total / WATER_GOAL_ML * 100), 100)
+    water_goal_ml = _get_water_goal(session, current_user.id)
+    pct   = min(round(total / water_goal_ml * 100), 100)
 
     # Tính streak
     streak = 0
     check_day = target
     while True:
         day_total = _total_for_day(session, current_user.id, check_day)
-        if day_total >= WATER_GOAL_ML:
+        if day_total >= water_goal_ml:
             streak += 1
             check_day -= timedelta(days=1)
         else:
@@ -119,7 +123,7 @@ def get_summary(
     return WaterSummary(
         date=str(target),
         total_ml=total,
-        goal_ml=WATER_GOAL_ML,
+        goal_ml=water_goal_ml,
         pct=pct,
         streak_days=streak,
         last_log_at=last_log,
@@ -136,21 +140,22 @@ def get_weekly(
     target = log_date or date.today()
     # Tính ngày đầu tuần (Thứ 2)
     monday = target - timedelta(days=target.weekday())
+    water_goal_ml = _get_water_goal(session, current_user.id)
 
     week_bars: List[WaterDayBar] = []
     for i in range(7):
         day = monday + timedelta(days=i)
         total = _total_for_day(session, current_user.id, day)
-        pct   = min(round(total / WATER_GOAL_ML * 100), 100)
+        pct   = min(round(total / water_goal_ml * 100), 100)
         week_bars.append(WaterDayBar(
             date=str(day),
             day_label=DAY_LABELS[i],
             total_ml=total,
-            goal_ml=WATER_GOAL_ML,
+            goal_ml=water_goal_ml,
             pct=pct,
         ))
 
-    return WaterWeekly(week=week_bars, goal_ml=WATER_GOAL_ML)
+    return WaterWeekly(week=week_bars, goal_ml=water_goal_ml)
 
 @router.get("/range")
 def get_range(

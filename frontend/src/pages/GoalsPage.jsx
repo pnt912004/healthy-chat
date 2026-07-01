@@ -19,7 +19,10 @@ const GoalsPage = () => {
     age: '',
     gender: 'male',
     activity_level: 'sedentary',
-    weekly_goal_rate: 0.5
+    weekly_goal_rate: 0.5,
+    daily_water_target_ml: 2500,
+    daily_sleep_target_hours: 8.0,
+    daily_exercise_target_minutes: 30
   });
 
   const [results, setResults] = useState(null);
@@ -43,7 +46,10 @@ const GoalsPage = () => {
           age: data.age || '',
           gender: data.gender || 'male',
           activity_level: data.activity_level || 'sedentary',
-          weekly_goal_rate: data.weekly_goal_rate || 0.5
+          weekly_goal_rate: data.weekly_goal_rate || 0.5,
+          daily_water_target_ml: data.daily_water_target_ml || 2500,
+          daily_sleep_target_hours: data.daily_sleep_target_hours || 8.0,
+          daily_exercise_target_minutes: data.daily_exercise_target_minutes || 30
         });
         if (data.tdee) {
           setResults({
@@ -66,9 +72,11 @@ const GoalsPage = () => {
   };
 
   const activityOptions = [
-    { value: 'sedentary', label: 'Ít Vận Động',  desc: 'Hầu như không tập luyện',       icon: 'weekend' },
-    { value: 'moderate',  label: 'Vừa Phải',     desc: 'Tập 3-5 buổi/tuần',             icon: 'directions_walk' },
-    { value: 'active',    label: 'Năng Động',    desc: 'Tập cường độ cao hàng ngày', icon: 'fitness_center' },
+    { value: 'sedentary',      label: 'Ít Vận Động',   desc: 'Hầu như không tập luyện',       icon: 'weekend' },
+    { value: 'lightly_active', label: 'Vận Động Nhẹ',  desc: 'Tập 1-3 buổi/tuần',             icon: 'directions_walk' },
+    { value: 'moderate',       label: 'Vừa Phải',      desc: 'Tập 3-5 buổi/tuần',             icon: 'directions_run' },
+    { value: 'active',         label: 'Năng Động',     desc: 'Tập 6-7 buổi/tuần',             icon: 'fitness_center' },
+    { value: 'very_active',    label: 'Rất Năng Động', desc: 'Tập nặng/Công việc thể lực',    icon: 'sports_martial_arts' },
   ];
 
   const handleChange = (e) => {
@@ -123,6 +131,9 @@ const GoalsPage = () => {
         height: parseFloat(formData.height) || 0,
         age: parseInt(formData.age, 10) || 0,
         weekly_goal_rate: parseFloat(formData.weekly_goal_rate) || 0.5,
+        daily_water_target_ml: parseInt(formData.daily_water_target_ml, 10) || 2500,
+        daily_sleep_target_hours: parseFloat(formData.daily_sleep_target_hours) || 8.0,
+        daily_exercise_target_minutes: parseInt(formData.daily_exercise_target_minutes, 10) || 30,
         daily_calorie_goal: customCalories ? Number(customCalories) : null
       };
       const updated = await updateGoal(payload);
@@ -269,10 +280,38 @@ const GoalsPage = () => {
                 </div>
               </div>
 
+              {/* Các Mục Tiêu Cá Nhân Khác */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
+                <div className="space-y-sm">
+                  <label className="text-label-md font-label-md text-on-surface" htmlFor="daily_water_target_ml">
+                    Mục Tiêu Nước (ml)
+                  </label>
+                  <input id="daily_water_target_ml" type="number" step="100" required
+                         value={formData.daily_water_target_ml} onChange={handleChange}
+                         placeholder="VD: 2500" className="input-field" />
+                </div>
+                <div className="space-y-sm">
+                  <label className="text-label-md font-label-md text-on-surface" htmlFor="daily_sleep_target_hours">
+                    Mục Tiêu Ngủ (giờ)
+                  </label>
+                  <input id="daily_sleep_target_hours" type="number" step="0.5" required
+                         value={formData.daily_sleep_target_hours} onChange={handleChange}
+                         placeholder="VD: 8.0" className="input-field" />
+                </div>
+                <div className="space-y-sm">
+                  <label className="text-label-md font-label-md text-on-surface" htmlFor="daily_exercise_target_minutes">
+                    Vận Động (phút)
+                  </label>
+                  <input id="daily_exercise_target_minutes" type="number" step="5" required
+                         value={formData.daily_exercise_target_minutes} onChange={handleChange}
+                         placeholder="VD: 30" className="input-field" />
+                </div>
+              </div>
+
               {/* Mức Độ Hoạt Động */}
               <div className="space-y-md">
                 <label className="text-label-md font-label-md text-on-surface block">Mức Độ Hoạt Động</label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-md">
                   {activityOptions.map(({ value, label, desc, icon }) => (
                     <label key={value}
                            className={`relative cursor-pointer rounded-lg border-2 p-md transition-all duration-200

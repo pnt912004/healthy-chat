@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlmodel import Field, SQLModel
 
 
@@ -26,5 +26,12 @@ class Goal(SQLModel, table=True):
     daily_calorie_goal: Optional[float] = Field(default=None)
     estimated_days_to_target: Optional[int] = Field(default=None)
 
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    daily_water_target_ml: Optional[int] = Field(default=2500)
+    daily_sleep_target_hours: Optional[float] = Field(default=8.0)
+    daily_exercise_target_minutes: Optional[int] = Field(default=30)
+    daily_protein_target: Optional[float] = Field(default=None)
+    daily_carbs_target: Optional[float] = Field(default=None)
+    daily_fat_target: Optional[float] = Field(default=None)
+
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

@@ -176,6 +176,7 @@ const AdminUsers = () => {
         rowKey="id" 
         loading={loading}
         pagination={{ pageSize: 10 }}
+        scroll={{ x: 'max-content' }}
       />
     </div>
   );

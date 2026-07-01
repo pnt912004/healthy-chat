@@ -39,7 +39,9 @@ const ProfilePage = () => {
     setLoading(true);
     setMessage({ text: '', type: '' });
     try {
-      await updateProfile(formData);
+      const updatedData = await updateProfile(formData);
+      const currentUser = JSON.parse(localStorage.getItem('hc_user')) || {};
+      localStorage.setItem('hc_user', JSON.stringify({ ...currentUser, ...updatedData, ...formData }));
       setMessage({ text: 'Cập nhật hồ sơ thành công!', type: 'success' });
     } catch (err) {
       setMessage({ text: err.response?.data?.detail || 'Có lỗi xảy ra', type: 'error' });
@@ -176,7 +178,7 @@ const ProfilePage = () => {
         <section className="bg-surface-container-lowest rounded-xl border border-surface-variant shadow-soft overflow-hidden">
           <div className="px-lg py-md border-b border-surface-variant bg-surface-container-low
                           flex justify-between items-center">
-            <h2 className="text-h3 font-h3 text-on-surface">Bảo Mật &amp; Mật Khẩu</h2>
+            <h2 className="text-h3 font-h3 text-on-surface">Bảo Mật & Mật Khẩu</h2>
             <span className="material-symbols-outlined text-outline">lock</span>
           </div>
           <div className="p-lg">

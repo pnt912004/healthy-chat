@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 import useScrollReveal from '../hooks/useScrollReveal';
 import { getNutritionSummary, getWaterSummary, getRandomTip, addNutritionLog, addWaterLog, getGoal, deleteNutritionLog, deleteWaterLog } from '../services/healthService';
 import { getExerciseSummary } from '../services/exerciseService';
-import { getSleepSummary, getMoodLogs } from '../services/wellnessService';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { getCurrentUser } from '../services/authService';
 import foodService from '../services/foodService';
@@ -19,8 +18,6 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [waterStreak, setWaterStreak] = useState(0);
   const [exercise, setExercise] = useState({ minutes: 0, caloriesBurned: 0, count: 0 });
-  const [sleepSummary, setSleepSummary] = useState({ avg_duration_hours: 0, streak_days: 0 });
-  const [moodLogs, setMoodLogs] = useState([]);
   
   // Quick Add State
   const [foodName, setFoodName] = useState('');
@@ -34,14 +31,12 @@ const DashboardPage = () => {
 
   const fetchData = async () => {
     try {
-      const [nutriRes, waterRes, tipRes, goalRes, exerciseRes, sleepRes, moodRes] = await Promise.all([
+      const [nutriRes, waterRes, tipRes, goalRes, exerciseRes] = await Promise.all([
         getNutritionSummary(),
         getWaterSummary(),
         getRandomTip(),
         getGoal().catch(() => ({ daily_calorie_goal: 2400, daily_water_target_ml: 2500 })),
-        getExerciseSummary().catch(() => ({ total_minutes: 0, total_calories_burned: 0, count: 0 })),
-        getSleepSummary().catch(() => ({ avg_duration_hours: 0, streak_days: 0 })),
-        getMoodLogs().catch(() => [])
+        getExerciseSummary().catch(() => ({ total_minutes: 0, total_calories_burned: 0, count: 0 }))
       ]);
 
       setNutrition({
@@ -62,9 +57,6 @@ const DashboardPage = () => {
         caloriesBurned: exerciseRes?.total_calories_burned || 0,
         count: exerciseRes?.count || 0
       });
-
-      setSleepSummary(sleepRes);
-      setMoodLogs(moodRes || []);
 
       setTip(tipRes);
     } catch (error) {
@@ -349,32 +341,8 @@ const DashboardPage = () => {
           </div>
         </section>
 
-        {/* Giấc Ngủ & Cảm Xúc */}
-        <section className="md:col-span-12 lg:col-span-4 card flex flex-col justify-between reveal reveal-delay-3">
-          <div className="flex items-center gap-sm mb-xs">
-            <span className="material-symbols-outlined text-indigo-500 bg-indigo-100 p-xs rounded-lg">
-              bedtime
-            </span>
-            <h2 className="text-h3 font-h3 text-on-surface">Sức Khỏe Hôm Nay</h2>
-          </div>
-          <div className="mt-md grid grid-cols-2 gap-sm">
-            <div className="p-3 bg-indigo-50 rounded-lg text-center">
-              <p className="text-label-sm text-indigo-700 mb-1">TB Giấc Ngủ</p>
-              <p className="text-h2 font-h2 text-indigo-600">{sleepSummary.avg_duration_hours.toFixed(1)}h</p>
-            </div>
-            <div className="p-3 bg-pink-50 rounded-lg text-center flex flex-col justify-center items-center">
-              <p className="text-label-sm text-pink-700 mb-1">Cảm Xúc Lần Cuối</p>
-              <p className="text-2xl">
-                {moodLogs.length > 0 
-                  ? (moodLogs[moodLogs.length-1].mood === 'happy' ? '😊' : moodLogs[moodLogs.length-1].mood === 'sad' ? '😔' : moodLogs[moodLogs.length-1].mood === 'angry' ? '😤' : moodLogs[moodLogs.length-1].mood === 'tired' ? '😴' : '😐')
-                  : '—'}
-              </p>
-            </div>
-          </div>
-        </section>
-
         {/* Mẹo Sức Khoẻ */}
-        <section className="md:col-span-12 lg:col-span-4 bg-primary-fixed rounded-xl p-lg
+        <section className="md:col-span-12 lg:col-span-12 bg-primary-fixed rounded-xl p-lg
                              shadow-soft flex flex-col justify-center items-center text-center
                              relative overflow-hidden reveal reveal-delay-4">
           <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent"></div>
@@ -419,14 +387,6 @@ const DashboardPage = () => {
               <div>
                 <p className="font-bold text-label-md">Tập Luyện Đều Đặn</p>
                 <p className="text-label-sm">{exercise.minutes >= 30 ? 'Đạt mục tiêu 30 phút' : 'Cần thêm thời gian tập'}</p>
-              </div>
-            </div>
-            {/* Sleep Badge */}
-            <div className={`px-lg py-sm rounded-xl flex items-center gap-sm border ${sleepSummary.streak_days >= 7 ? 'bg-indigo-100 border-indigo-500 text-indigo-700' : 'bg-surface border-outline-variant text-on-surface-variant'}`}>
-              <span className="text-2xl">{sleepSummary.streak_days >= 7 ? '🛌' : '🥱'}</span>
-              <div>
-                <p className="font-bold text-label-md">Ngủ Đều Đặn</p>
-                <p className="text-label-sm">{sleepSummary.streak_days >= 7 ? 'Chuỗi 7 ngày ngủ đủ' : 'Hãy cố gắng ngủ đủ giấc'}</p>
               </div>
             </div>
             {/* Beginner Badge */}

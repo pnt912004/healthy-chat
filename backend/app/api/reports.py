@@ -14,6 +14,7 @@ from ..schemas.report import (
     DailySummary, WeeklyReport, MonthlyReport, 
     ComparisonReport, HealthScore, AIReview
 )
+from ..models.goal import Goal
 from ..core.security import get_current_user
 
 import google.generativeai as genai
@@ -71,6 +72,41 @@ def _get_daily_summary(session: Session, user_id: int, target_date: date) -> Dai
         sleep_hours=sleep_hours
     )
 
+def _get_period_summaries(session: Session, user_id: int, start: date, end: date) -> dict:
+    start_time = datetime.combine(start, datetime.min.time())
+    end_time = datetime.combine(end, datetime.max.time())
+    
+    nutritions = session.exec(select(NutritionLog).where(NutritionLog.user_id == user_id, NutritionLog.logged_at >= start_time, NutritionLog.logged_at <= end_time)).all()
+    waters = session.exec(select(WaterLog).where(WaterLog.user_id == user_id, WaterLog.logged_at >= start_time, WaterLog.logged_at <= end_time)).all()
+    exercises = session.exec(select(ExerciseLog).where(ExerciseLog.user_id == user_id, ExerciseLog.logged_at >= start_time, ExerciseLog.logged_at <= end_time)).all()
+    sleeps = session.exec(select(SleepLog).where(SleepLog.user_id == user_id, SleepLog.logged_at >= start_time, SleepLog.logged_at <= end_time)).all()
+    
+    summaries = {}
+    curr = start
+    while curr <= end:
+        summaries[curr] = DailySummary(
+            date=curr, calories_consumed=0, calories_burned=0,
+            water_ml=0, exercise_minutes=0, sleep_hours=0
+        )
+        curr += timedelta(days=1)
+        
+    for n in nutritions:
+        d = n.logged_at.date()
+        if d in summaries: summaries[d].calories_consumed += n.calories
+    for w in waters:
+        d = w.logged_at.date()
+        if d in summaries: summaries[d].water_ml += w.amount_ml
+    for e in exercises:
+        d = e.logged_at.date()
+        if d in summaries: 
+            summaries[d].calories_burned += e.calories_burned
+            summaries[d].exercise_minutes += e.duration_minutes
+    for s in sleeps:
+        d = s.logged_at.date()
+        if d in summaries: summaries[d].sleep_hours += s.duration_hours
+            
+    return summaries
+
 @router.get("/weekly", response_model=WeeklyReport)
 def get_weekly_report(
     target_date: Optional[date] = Query(default=None),
@@ -79,6 +115,10 @@ def get_weekly_report(
 ):
     end = target_date or date.today()
     start = end - timedelta(days=6)
+    
+    goal = session.exec(select(Goal).where(Goal.user_id == current_user.id)).first()
+    cal_target = goal.daily_calorie_goal if goal and getattr(goal, 'daily_calorie_goal', None) else 2000
+    water_target = goal.daily_water_target_ml if goal and getattr(goal, 'daily_water_target_ml', None) else 2500
     
     summaries = []
     days_goal_reached = 0
@@ -99,8 +139,8 @@ def get_weekly_report(
         total_sleep += summary.sleep_hours
         total_ex_min += summary.exercise_minutes
         
-        # Simple goal logic: water > 2000 and cal_consumed > 1000
-        if summary.water_ml >= 2000 and summary.calories_consumed >= 1000:
+        # Simple goal logic: use user goals
+        if summary.water_ml >= water_target and summary.calories_consumed >= cal_target * 0.8:
             days_goal_reached += 1
             
     return WeeklyReport(
@@ -135,6 +175,10 @@ def get_monthly_report(
         
     days_in_month = (end - start).days + 1
     
+    goal = session.exec(select(Goal).where(Goal.user_id == current_user.id)).first()
+    cal_target = goal.daily_calorie_goal if goal and getattr(goal, 'daily_calorie_goal', None) else 2000
+    water_target = goal.daily_water_target_ml if goal and getattr(goal, 'daily_water_target_ml', None) else 2500
+    
     summaries = []
     days_goal_reached = 0
     total_cal_consumed = 0.0
@@ -143,9 +187,11 @@ def get_monthly_report(
     total_sleep = 0.0
     total_ex_min = 0
     
+    period_summaries = _get_period_summaries(session, current_user.id, start, end)
+    
     for i in range(days_in_month):
         current_day = start + timedelta(days=i)
-        summary = _get_daily_summary(session, current_user.id, current_day)
+        summary = period_summaries[current_day]
         summaries.append(summary)
         
         total_cal_consumed += summary.calories_consumed
@@ -154,7 +200,7 @@ def get_monthly_report(
         total_sleep += summary.sleep_hours
         total_ex_min += summary.exercise_minutes
         
-        if summary.water_ml >= 2000 and summary.calories_consumed >= 1000:
+        if summary.water_ml >= water_target and summary.calories_consumed >= cal_target * 0.8:
             days_goal_reached += 1
             
     return MonthlyReport(
@@ -219,6 +265,8 @@ def get_health_score(
     
     total_cal = 0
     total_water = 0
+    total_ex = 0
+    total_sleep = 0
     days_logged = 0
     
     for i in range(7):
@@ -226,24 +274,42 @@ def get_health_score(
         s = _get_daily_summary(session, current_user.id, d)
         total_cal += s.calories_consumed
         total_water += s.water_ml
-        if s.calories_consumed > 0 or s.water_ml > 0:
+        total_ex += s.exercise_minutes
+        total_sleep += s.sleep_hours
+        if s.calories_consumed > 0 or s.water_ml > 0 or s.exercise_minutes > 0 or s.sleep_hours > 0:
             days_logged += 1
             
     avg_cal = total_cal / 7
     avg_water = total_water / 7
+    avg_ex = total_ex / 7
+    avg_sleep = total_sleep / 7
     
-    # Nutrition: 0-40 (giả sử lý tưởng là 2000, dung sai)
-    nutrition_score = 40.0 if 1500 <= avg_cal <= 2500 else 20.0
-    # Water: 0-30 (lý tưởng >= 2000)
-    water_score = 30.0 if avg_water >= 2000 else (avg_water / 2000) * 30
-    # Consistency: 0-30 (logged days)
-    consistency_score = (days_logged / 7) * 30
+    goal = session.exec(select(Goal).where(Goal.user_id == current_user.id)).first()
+    cal_target = goal.daily_calorie_goal if goal and getattr(goal, 'daily_calorie_goal', None) else 2000
+    water_target = goal.daily_water_target_ml if goal and getattr(goal, 'daily_water_target_ml', None) else 2500
+    ex_target = goal.daily_exercise_target_minutes if goal and getattr(goal, 'daily_exercise_target_minutes', None) else 30
+    sleep_target = goal.daily_sleep_target_hours if goal and getattr(goal, 'daily_sleep_target_hours', None) else 8.0
+    
+    # Nutrition: 30
+    nutrition_score = 30.0 * min(avg_cal / cal_target, 1.0) if cal_target > 0 and avg_cal <= cal_target * 1.2 else 15.0
+    # Water: 20
+    water_score = 20.0 if avg_water >= water_target else (avg_water / water_target) * 20 if water_target > 0 else 0
+    # Exercise: 20
+    ex_score = 20.0 if avg_ex >= ex_target else (avg_ex / ex_target) * 20 if ex_target > 0 else 0
+    # Sleep: 15
+    sleep_score = 15.0 if avg_sleep >= sleep_target else (avg_sleep / sleep_target) * 15 if sleep_target > 0 else 0
+    # Consistency: 15
+    consistency_score = (days_logged / 7) * 15
+    
+    total_score = nutrition_score + water_score + ex_score + sleep_score + consistency_score
     
     return HealthScore(
         date=end,
-        total_score=nutrition_score + water_score + consistency_score,
+        total_score=total_score,
         nutrition_score=nutrition_score,
         water_score=water_score,
+        exercise_score=ex_score,
+        sleep_score=sleep_score,
         consistency_score=consistency_score
     )
 

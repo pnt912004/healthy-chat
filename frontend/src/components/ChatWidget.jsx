@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { sendMessageToAdmin, getChatHistory, getUserUnreadCount, markUserChatAsRead } from '../services/chatService';
+import { sendMessage, sendMessageToAdmin, getChatHistory, getUserUnreadCount, markUserChatAsRead } from '../services/chatService';
 import { useAuth } from '../contexts/AuthContext';
 
 const ChatWidget = () => {
@@ -7,7 +7,7 @@ const ChatWidget = () => {
   const [activeTab, setActiveTab] = useState('admin');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState({
-    ai: [{ sender: 'ai', text: 'Tính năng AI đang bảo trì.' }],
+    ai: [],
     admin: []
   });
   const [unreadCount, setUnreadCount] = useState(0);
@@ -15,6 +15,7 @@ const ChatWidget = () => {
   const messagesEndRef = useRef(null);
 
   const adminSessionId = `admin_${user?.id}`;
+  const aiSessionId = `ai_${user?.id}`;
 
   const toggleChat = () => {
     setIsOpen(!isOpen);
@@ -37,6 +38,20 @@ const ChatWidget = () => {
     }
   };
 
+  const loadAiHistory = async () => {
+    if (!isAuthenticated) return;
+    try {
+      const history = await getChatHistory(aiSessionId);
+      const formatted = history.map(m => ({
+        sender: m.role,
+        text: m.content
+      }));
+      setMessages(prev => ({ ...prev, ai: formatted }));
+    } catch (error) {
+      console.error("Lỗi khi tải lịch sử AI:", error);
+    }
+  };
+
   const checkUnread = async () => {
     if (!isAuthenticated) return;
     try {
@@ -48,6 +63,7 @@ const ChatWidget = () => {
   useEffect(() => {
     if (isAuthenticated) {
       loadAdminHistory();
+      loadAiHistory();
       checkUnread();
     }
   }, [isAuthenticated]);
@@ -91,7 +107,8 @@ const ChatWidget = () => {
         // Will be updated by polling or we can call loadAdminHistory
         loadAdminHistory();
       } else {
-        // AI logic
+        await sendMessage(userText, aiSessionId);
+        loadAiHistory();
       }
     } catch (error) {
       console.error("Lỗi khi gửi:", error);

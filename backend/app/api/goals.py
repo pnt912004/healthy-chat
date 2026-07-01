@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -138,7 +138,7 @@ def upsert_goal(
             goal.bmi = bmi
             goal.daily_calorie_goal = round(daily_goal, 1)
             goal.estimated_days_to_target = estimated_days
-            goal.updated_at = datetime.utcnow()
+            goal.updated_at = datetime.now(timezone.utc)
         else:
             body_data = body.model_dump(exclude={"daily_calorie_goal"})
             goal = Goal(

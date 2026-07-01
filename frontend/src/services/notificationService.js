@@ -2,42 +2,42 @@ import api from './api';
 
 export const notificationService = {
   getNotifications: async (skip = 0, limit = 20) => {
-    const response = await api.get('/notifications', { params: { skip, limit } });
+    const response = await api.get('/api/v1/notifications', { params: { skip, limit } });
     return response.data;
   },
 
   getUnreadCount: async () => {
-    const response = await api.get('/notifications/unread-count');
+    const response = await api.get('/api/v1/notifications/unread-count');
     return response.data;
   },
 
   markAsRead: async (id) => {
-    const response = await api.post(`/notifications/read/${id}`);
+    const response = await api.post(`/api/v1/notifications/read/${id}`);
     return response.data;
   },
 
   markAllAsRead: async () => {
-    const response = await api.post('/notifications/read-all');
+    const response = await api.post('/api/v1/notifications/read-all');
     return response.data;
   },
 
   deleteNotification: async (id) => {
-    const response = await api.delete(`/notifications/${id}`);
+    const response = await api.delete(`/api/v1/notifications/${id}`);
     return response.data;
   },
 
   getReminderSettings: async () => {
-    const response = await api.get('/reminders/settings');
+    const response = await api.get('/api/v1/reminders/settings');
     return response.data;
   },
 
   updateReminderSettings: async (data) => {
-    const response = await api.put('/reminders/settings', data);
+    const response = await api.put('/api/v1/reminders/settings', data);
     return response.data;
   },
 
   checkReminders: async () => {
-    const response = await api.post('/reminders/check');
+    const response = await api.post('/api/v1/reminders/check');
     return response.data;
   }
 };
