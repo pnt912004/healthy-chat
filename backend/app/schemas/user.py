@@ -17,6 +17,11 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
+    captcha_token: Optional[str] = None
+
+
+class GoogleLogin(BaseModel):
+    id_token: str
 
 
 # ─── Update Profile ────────────────────────────────────────────────────────

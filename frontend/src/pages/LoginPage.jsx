@@ -3,7 +3,9 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { login } from '../services/authService';
+import { useAuth } from '../contexts/AuthContext';
+import ReCAPTCHA from "react-google-recaptcha";
+import { GoogleLogin } from '@react-oauth/google';
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -11,20 +13,44 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState(null);
   const navigate = useNavigate();
+  const { login, googleLogin } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+    if (!captchaToken && import.meta.env.VITE_RECAPTCHA_SITE_KEY) {
+      setError("Vui lòng xác nhận Captcha");
+      setLoading(false);
+      return;
+    }
     try {
-      await login(username, password);
+      await login(username, password, captchaToken);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.detail || 'Đăng nhập thất bại. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError('');
+    setLoading(true);
+    try {
+      await googleLogin(credentialResponse.credential);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Đăng nhập bằng Google thất bại.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Đăng nhập bằng Google không thành công.');
   };
 
   return (
@@ -115,16 +141,46 @@ const LoginPage = () => {
 
             </div>
 
+            {/* Captcha */}
+            {(import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LfUfEEtAAAAANyz-wIzUxZSOEUQ2Okksof6Tf2V") && (
+              <div className="flex justify-center mt-md">
+                <ReCAPTCHA
+                  sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LfUfEEtAAAAANyz-wIzUxZSOEUQ2Okksof6Tf2V"}
+                  onChange={(token) => setCaptchaToken(token)}
+                />
+              </div>
+            )}
+
             {/* Submit */}
             <button type="submit"
-                    disabled={loading}
+                    disabled={loading || ((import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LfUfEEtAAAAANyz-wIzUxZSOEUQ2Okksof6Tf2V") && !captchaToken)}
                     className={`w-full h-xxl bg-primary-container text-on-primary
                                text-label-md font-label-md rounded-lg
                                hover:bg-primary transition-all active:scale-[0.98] mt-xl
-                               ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                               ${(loading || ((import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LfUfEEtAAAAANyz-wIzUxZSOEUQ2Okksof6Tf2V") && !captchaToken)) ? 'opacity-50 cursor-not-allowed' : ''}`}>
               {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
             </button>
           </form>
+
+          {/* Divider */}
+          <div className="flex items-center gap-md my-lg">
+            <div className="h-px bg-outline-variant/50 flex-1"></div>
+            <span className="text-label-sm text-on-surface-variant uppercase tracking-wider">hoặc</span>
+            <div className="h-px bg-outline-variant/50 flex-1"></div>
+          </div>
+
+          {/* Google Login */}
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              useOneTap
+              theme="outline"
+              size="large"
+              shape="rectangular"
+              width="100%"
+            />
+          </div>
 
           {/* Sign Up Link */}
           <div className="mt-lg text-center">

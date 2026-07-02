@@ -75,11 +75,11 @@ const NotificationBell = () => {
 
   const getIcon = (type) => {
     switch(type) {
-      case 'water': return <span className="material-icons text-blue-500">water_drop</span>;
-      case 'meal': return <span className="material-icons text-orange-500">restaurant</span>;
-      case 'exercise': return <span className="material-icons text-green-500">fitness_center</span>;
-      case 'weekly': return <span className="material-icons text-purple-500">assessment</span>;
-      default: return <span className="material-icons text-gray-500">notifications</span>;
+      case 'water': return <span className="material-symbols-outlined text-blue-500">water_drop</span>;
+      case 'meal': return <span className="material-symbols-outlined text-orange-500">restaurant</span>;
+      case 'exercise': return <span className="material-symbols-outlined text-green-500">fitness_center</span>;
+      case 'weekly': return <span className="material-symbols-outlined text-purple-500">assessment</span>;
+      default: return <span className="material-symbols-outlined text-gray-500">notifications</span>;
     }
   };
 
@@ -90,7 +90,7 @@ const NotificationBell = () => {
         onClick={handleToggle}
       >
         <Badge count={unreadCount} overflowCount={99} size="small">
-          <span className="material-icons text-gray-600 dark:text-gray-300">notifications</span>
+          <span className="material-symbols-outlined text-gray-600 dark:text-gray-300">notifications</span>
         </Badge>
       </div>
 
@@ -111,11 +111,11 @@ const NotificationBell = () => {
           <div className="max-h-96 overflow-y-auto">
             {loading ? (
               <div className="p-8 text-center text-gray-500">
-                <span className="material-icons animate-spin">sync</span>
+                <span className="material-symbols-outlined animate-spin">sync</span>
               </div>
             ) : notifications.length === 0 ? (
               <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                <span className="material-icons text-4xl mb-2 opacity-50">notifications_none</span>
+                <span className="material-symbols-outlined text-4xl mb-2 opacity-50">notifications_none</span>
                 <p>Bạn không có thông báo nào</p>
               </div>
             ) : (

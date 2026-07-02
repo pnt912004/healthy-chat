@@ -39,14 +39,20 @@ export const AuthProvider = ({ children }) => {
     };
   }, [navigate]);
 
-  const login = async (username, password) => {
-    const data = await authService.login(username, password);
+  const login = async (username, password, captcha_token) => {
+    const data = await authService.login(username, password, captcha_token);
     setUser(data.user);
     return data;
   };
 
   const register = async (userData) => {
     const data = await authService.register(userData);
+    // Không set user vì chưa có token
+    return data;
+  };
+  
+  const googleLogin = async (id_token) => {
+    const data = await authService.googleLogin(id_token);
     setUser(data.user);
     return data;
   };
@@ -62,6 +68,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
     login,
     register,
+    googleLogin,
     logout,
     setUser,
   };

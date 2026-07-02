@@ -194,8 +194,8 @@ const DashboardPage = () => {
                   { name: 'Consumed', value: Math.min(percentage, 100) },
                   { name: 'Remaining', value: Math.max(100 - percentage, 0) }
                 ]} innerRadius={60} outerRadius={80} startAngle={90} endAngle={-270} dataKey="value" stroke="none">
-                  <Cell fill="var(--primary)" />
-                  <Cell fill="var(--surface-container-high)" />
+                  <Cell fill="#006e2f" />
+                  <Cell fill="#e2ebde" />
                 </Pie>
               </PieChart>
             </ResponsiveContainer>

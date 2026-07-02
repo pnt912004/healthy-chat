@@ -1,6 +1,6 @@
 // src/pages/ProfilePage.jsx
 import { useState } from 'react';
-import { getCurrentUser, updateProfile, changePassword, deleteAccount, logout } from '../services/authService';
+import { getCurrentUser, updateProfile, changePassword, deleteAccount, logout, uploadAvatar } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 
 const ProfilePage = () => {
@@ -12,7 +12,8 @@ const ProfilePage = () => {
     first_name: user.first_name || '',
     last_name: user.last_name || '',
     email: user.email || '',
-    phone: user.phone || ''
+    phone: user.phone || '',
+    avatar_url: user.avatar_url || ''
   });
 
   const [pwData, setPwData] = useState({
@@ -25,6 +26,23 @@ const ProfilePage = () => {
   const [pwMessage, setPwMessage] = useState({ text: '', type: '' });
   const [loading, setLoading] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setUploadingAvatar(true);
+    try {
+      const updatedUser = await uploadAvatar(file);
+      setFormData(prev => ({ ...prev, avatar_url: updatedUser.avatar_url }));
+      setMessage({ text: 'Tải ảnh đại diện thành công!', type: 'success' });
+    } catch (err) {
+      setMessage({ text: err.response?.data?.detail || 'Lỗi khi tải ảnh', type: 'error' });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -106,14 +124,30 @@ const ProfilePage = () => {
             <div className="flex items-center gap-lg">
               <div className="relative group">
                 <img
-                  src={user.avatar_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuDj0raqm2t0fRhHHlQ55-LUviPGt0Ibk4MbA-UnrUM5W_gik2hCXeosdawsvsySvOYuZTg36KkTHgEoYIfMDzimd1g3n83BAxb2Y9u3Y65ZnnmfOb3dqyjb_VRsCXx3kXpTJFtlwsHQ8kuPeBi-U0YVyFnuqrdnP2ABrUzJMwWDSbqqajXapb-4dXlUyxHTv7hwzTcbWwUSQAZWnk6ZfwAhTkZbppWOKXmgYG83oNHltI0Siodgd-HcrhX4zvBvyd4ccUXO4gYa7rNj"}
+                  src={formData.avatar_url || user.avatar_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuDj0raqm2t0fRhHHlQ55-LUviPGt0Ibk4MbA-UnrUM5W_gik2hCXeosdawsvsySvOYuZTg36KkTHgEoYIfMDzimd1g3n83BAxb2Y9u3Y65ZnnmfOb3dqyjb_VRsCXx3kXpTJFtlwsHQ8kuPeBi-U0YVyFnuqrdnP2ABrUzJMwWDSbqqajXapb-4dXlUyxHTv7hwzTcbWwUSQAZWnk6ZfwAhTkZbppWOKXmgYG83oNHltI0Siodgd-HcrhX4zvBvyd4ccUXO4gYa7rNj"}
                   alt="Current Avatar"
                   className="w-24 h-24 rounded-full object-cover border-4 border-surface-container-lowest shadow-soft"
                 />
               </div>
-              <div className="flex-1">
-                <h3 className="text-label-md font-label-md text-on-surface mb-xs">Ảnh Đại Diện</h3>
-                <p className="text-body-sm font-body-sm text-outline mb-sm">Tính năng tải ảnh lên đang được phát triển.</p>
+              <div className="flex-1 space-y-2 relative">
+                <h3 className="text-label-md font-label-md text-on-surface">Ảnh Đại Diện</h3>
+                <input 
+                  id="avatar_upload" 
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden" 
+                />
+                <label 
+                  htmlFor="avatar_upload"
+                  className={`inline-flex items-center gap-2 px-4 py-2 border border-outline text-on-surface rounded-lg cursor-pointer hover:bg-surface-container transition-colors ${uploadingAvatar ? 'opacity-50 pointer-events-none' : ''}`}
+                >
+                  <span className={`material-symbols-outlined ${uploadingAvatar ? 'animate-spin' : ''}`}>
+                    {uploadingAvatar ? 'sync' : 'upload'}
+                  </span>
+                  {uploadingAvatar ? 'Đang tải lên...' : 'Chọn Ảnh Từ Máy'}
+                </label>
+                <p className="text-body-sm text-outline mt-2">Định dạng hỗ trợ: JPG, PNG, WEBP.</p>
               </div>
             </div>
 

@@ -1,5 +1,9 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+import os
+import uuid
+import shutil
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from sqlmodel import Session
 from sqlmodel import Session
 
 from ..db.session import get_session
@@ -28,6 +32,38 @@ def update_me(
     session.add(current_user)
     session.commit()
     session.refresh(current_user)
+    return current_user
+
+
+@router.post("/me/avatar", response_model=UserOut)
+def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Chỉ hỗ trợ tệp định dạng hình ảnh")
+
+    # Đảm bảo thư mục tồn tại
+    upload_dir = "uploads/avatars"
+    os.makedirs(upload_dir, exist_ok=True)
+
+    # Tạo tên file an toàn với uuid
+    ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+    safe_filename = f"{current_user.id}_{uuid.uuid4().hex[:8]}.{ext}"
+    file_path = os.path.join(upload_dir, safe_filename)
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Cập nhật đường dẫn vào database
+    current_user.avatar_url = f"http://localhost:8000/uploads/avatars/{safe_filename}"
+    current_user.updated_at = datetime.utcnow()
+    
+    session.add(current_user)
+    session.commit()
+    session.refresh(current_user)
+    
     return current_user
 
 

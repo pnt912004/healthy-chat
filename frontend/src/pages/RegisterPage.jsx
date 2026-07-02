@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { register } from '../services/authService';
+import { useAuth } from '../contexts/AuthContext';
 
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,7 +18,9 @@ const RegisterPage = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -37,7 +39,7 @@ const RegisterPage = () => {
         last_name: formData.lastName,
         password: formData.password
       });
-      navigate('/goals'); // Sau khi đăng ký thì đi thiết lập mục tiêu
+      setSuccess(true);
     } catch (err) {
       setError(err.response?.data?.detail || 'Đăng ký thất bại. Vui lòng thử lại.');
     } finally {
@@ -111,7 +113,20 @@ const RegisterPage = () => {
               </div>
             )}
 
-            {/* Form */}
+            {success ? (
+              <div className="bg-primary-container text-on-primary-container p-xl rounded-xl text-center">
+                <span className="material-symbols-outlined text-[48px] text-primary mb-md" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  mark_email_read
+                </span>
+                <h3 className="text-h3 font-h3 mb-sm">Đăng ký thành công!</h3>
+                <p className="text-body-md mb-lg">
+                  Vui lòng kiểm tra hộp thư email của bạn (<b>{formData.email}</b>) để xác nhận tài khoản.
+                </p>
+                <Link to="/login" className="inline-flex items-center justify-center h-xl px-xl bg-primary text-on-primary rounded-full hover:bg-primary-dark transition-colors font-semibold">
+                  Về trang Đăng nhập
+                </Link>
+              </div>
+            ) : (
             <form className="space-y-md" onSubmit={handleSubmit}>
               {/* First & Last Name */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
@@ -253,6 +268,7 @@ const RegisterPage = () => {
                 </button>
               </div>
             </form>
+            )}
 
             {/* Login redirect */}
             <div className="mt-xl text-center">

@@ -1,11 +1,14 @@
+import os
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db.session import init_db
 from .api import (
     auth_router, users_router, goals_router,
     nutrition_router, water_router, chat_router,
-    tips_router, admin_router, exercise_router
+    tips_router, admin_router, exercise_router,
+    reports_router, notifications_router, reminders_router, foods_router
 )
 
 app = FastAPI(
@@ -34,6 +37,10 @@ app.add_middleware(
 def on_startup():
     init_db()
 
+# ─── Static Files ─────────────────────────────────────────────────────────────
+os.makedirs("uploads/avatars", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 # ─── Routers ─────────────────────────────────────────────────────────────────
 PREFIX = "/api/v1"
 
@@ -45,6 +52,10 @@ app.include_router(water_router,     prefix=PREFIX)
 app.include_router(exercise_router,  prefix=PREFIX)
 app.include_router(chat_router,      prefix=PREFIX)
 app.include_router(tips_router,      prefix=PREFIX)
+app.include_router(foods_router,     prefix=PREFIX)
+app.include_router(reports_router,   prefix=PREFIX)
+app.include_router(notifications_router, prefix=PREFIX)
+app.include_router(reminders_router, prefix=PREFIX)
 app.include_router(admin_router,     prefix=f"{PREFIX}/admin")
 
 # ─── Health Check ─────────────────────────────────────────────────────────────

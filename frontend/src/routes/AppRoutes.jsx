@@ -13,9 +13,11 @@ import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminUsers from '../pages/admin/AdminUsers';
 import AdminTips from '../pages/admin/AdminTips';
 import AdminChatLogs from '../pages/admin/AdminChatLogs';
+import AdminSettings from '../pages/admin/AdminSettings';
 import HomePage          from '../pages/HomePage';
 import LoginPage         from '../pages/LoginPage';
 import RegisterPage      from '../pages/RegisterPage';
+import VerifyEmailPage   from '../pages/VerifyEmailPage';
 import DashboardPage     from '../pages/DashboardPage';
 import GoalsPage         from '../pages/GoalsPage';
 import ProfilePage       from '../pages/ProfilePage';
@@ -39,6 +41,7 @@ const AppRoutes = () => {
       <Route element={<AuthLayout />}>
         <Route path="/login"     element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
         <Route path="/register"  element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />} />
+        <Route path="/verify"    element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <VerifyEmailPage />} />
       </Route>
 
       {/* App Routes (Protected) */}
@@ -63,7 +66,7 @@ const AppRoutes = () => {
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/tips" element={<AdminTips />} />
           <Route path="/admin/chat-logs" element={<AdminChatLogs />} />
-          <Route path="/admin/settings" element={<div>Admin Settings Placeholder</div>} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
         </Route>
       </Route>
 

@@ -131,7 +131,7 @@ def upsert_goal(
 
         if goal:
             # Cập nhật chỉ các field input từ user (loại bỏ daily_calorie_goal vì sẽ gán riêng)
-            for key, val in body.model_dump(exclude={"daily_calorie_goal"}).items():
+            for key, val in body.model_dump(exclude={"daily_calorie_goal"}, exclude_unset=True).items():
                 setattr(goal, key, val)
             goal.bmr = bmr
             goal.tdee = tdee

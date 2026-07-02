@@ -9,5 +9,7 @@ from .food import Food
 from .favorite_food import FavoriteFood
 from .notification import Notification
 from .reminder_setting import ReminderSetting
+from .sleep_log import SleepLog
+from .mood_log import MoodLog
 
-__all__ = ["User", "Goal", "NutritionLog", "WaterLog", "ChatMessage", "HealthTip", "ExerciseLog", "Food", "FavoriteFood", "Notification", "ReminderSetting"]
+__all__ = ["User", "Goal", "NutritionLog", "WaterLog", "ChatMessage", "HealthTip", "ExerciseLog", "Food", "FavoriteFood", "Notification", "ReminderSetting", "SleepLog", "MoodLog"]

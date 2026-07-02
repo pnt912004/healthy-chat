@@ -33,7 +33,9 @@ const SettingsPage = () => {
     try {
       setLoading(true);
       const data = await notificationService.getReminderSettings();
-      setSettings(data);
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        setSettings(prev => ({ ...prev, ...data }));
+      }
     } catch (error) {
       console.error('Error fetching settings:', error);
     } finally {
@@ -53,7 +55,7 @@ const SettingsPage = () => {
     }
   };
 
-  if (loading) return <div className="flex justify-center p-8"><span className="material-icons animate-spin text-primary-500">sync</span></div>;
+  if (loading) return <div className="flex justify-center p-8"><span className="material-symbols-outlined animate-spin text-primary-500">sync</span></div>;
 
   return (
     <>
@@ -80,7 +82,7 @@ const SettingsPage = () => {
               <div className="flex items-center gap-4">
                 <select 
                   className="input-field py-1 px-2 text-sm"
-                  value={settings.water_interval_hours}
+                  value={settings.water_interval_hours || 2}
                   onChange={(e) => updateSetting('water_interval_hours', parseInt(e.target.value))}
                   disabled={!settings.water_reminder}
                 >
@@ -88,7 +90,7 @@ const SettingsPage = () => {
                   <option value={2}>Mỗi 2 giờ</option>
                   <option value={3}>Mỗi 3 giờ</option>
                 </select>
-                <Toggle checked={settings.water_reminder} onChange={(e) => updateSetting('water_reminder', e.target.checked)} />
+                <Toggle checked={!!settings.water_reminder} onChange={(e) => updateSetting('water_reminder', e.target.checked)} />
               </div>
             </li>
             
@@ -97,7 +99,7 @@ const SettingsPage = () => {
                 <p className="text-h3 font-h3">Nhắc nhở bữa ăn</p>
                 <p className="text-body-sm text-on-surface-variant">Nhắc nhở nhập dữ liệu bữa ăn nếu quên</p>
               </div>
-              <Toggle checked={settings.meal_reminder} onChange={(e) => updateSetting('meal_reminder', e.target.checked)} />
+              <Toggle checked={!!settings.meal_reminder} onChange={(e) => updateSetting('meal_reminder', e.target.checked)} />
             </li>
 
             <li className="py-md flex items-center justify-between gap-md">
@@ -105,7 +107,7 @@ const SettingsPage = () => {
                 <p className="text-h3 font-h3">Nhắc nhở tập thể dục</p>
                 <p className="text-body-sm text-on-surface-variant">Nhắc nhở nếu bạn chưa vận động trong ngày</p>
               </div>
-              <Toggle checked={settings.exercise_reminder} onChange={(e) => updateSetting('exercise_reminder', e.target.checked)} />
+              <Toggle checked={!!settings.exercise_reminder} onChange={(e) => updateSetting('exercise_reminder', e.target.checked)} />
             </li>
 
             <li className="py-md flex items-center justify-between gap-md">
@@ -113,7 +115,7 @@ const SettingsPage = () => {
                 <p className="text-h3 font-h3">Báo cáo tổng kết tuần</p>
                 <p className="text-body-sm text-on-surface-variant">Thông báo khi có báo cáo sức khỏe mới</p>
               </div>
-              <Toggle checked={settings.weekly_report} onChange={(e) => updateSetting('weekly_report', e.target.checked)} />
+              <Toggle checked={!!settings.weekly_report} onChange={(e) => updateSetting('weekly_report', e.target.checked)} />
             </li>
           </ul>
         </section>
@@ -130,7 +132,7 @@ const SettingsPage = () => {
               <input 
                 type="time" 
                 className="input-field" 
-                value={settings.quiet_hours_start}
+                value={settings.quiet_hours_start || "22:00"}
                 onChange={(e) => updateSetting('quiet_hours_start', e.target.value)}
               />
             </div>
@@ -139,7 +141,7 @@ const SettingsPage = () => {
               <input 
                 type="time" 
                 className="input-field" 
-                value={settings.quiet_hours_end}
+                value={settings.quiet_hours_end || "07:00"}
                 onChange={(e) => updateSetting('quiet_hours_end', e.target.value)}
               />
             </div>

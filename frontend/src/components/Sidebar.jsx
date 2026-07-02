@@ -2,6 +2,7 @@
 // SideNavBar – Dashboard layout (desktop only, sticky)
 
 import { Link, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 
 const sideItems = [
   { label: 'Bảng Điều Khiển', to: '/dashboard',  icon: 'dashboard' },
@@ -22,6 +23,7 @@ const Sidebar = () => {
   const { user } = useAuth();
   const currentUser = user || {};
   const fullName = [currentUser.first_name, currentUser.last_name].filter(Boolean).join(' ') || currentUser.username || 'Healthy User';
+  const [showPremiumMsg, setShowPremiumMsg] = useState(false);
 
   return (
     <aside className="bg-white dark:bg-slate-900 h-[calc(100vh-64px)]
@@ -81,9 +83,17 @@ const Sidebar = () => {
       <div className="p-lg border-t border-slate-100 dark:border-slate-800">
         <button className="w-full h-xxl bg-primary-container text-on-primary-container
                            font-label-md text-label-md rounded-lg hover:opacity-90 transition-opacity"
-                onClick={() => alert('Chức năng đang được phát triển')}>
+                onClick={() => {
+                  setShowPremiumMsg(true);
+                  setTimeout(() => setShowPremiumMsg(false), 3000);
+                }}>
           Nâng Cấp Gói
         </button>
+        {showPremiumMsg && (
+          <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs rounded-lg text-center animate-fade-in border border-green-200 dark:border-green-800">
+            Chức năng Premium sắp ra mắt!
+          </div>
+        )}
       </div>
     </aside>
   );
