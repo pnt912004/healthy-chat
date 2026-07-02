@@ -27,7 +27,8 @@ def init_db():
         from ..core.security import hash_password
 
         # Seed admin
-        if not session.exec(select(User).where(User.username == "admin")).first():
+        admin_user = session.exec(select(User).where(User.username == "admin")).first()
+        if not admin_user:
             admin_user = User(
                 username="admin",
                 email="admin@healthychat.com",
@@ -35,9 +36,15 @@ def init_db():
                 first_name="Super",
                 last_name="Admin",
                 role="admin",
+                is_verified=True
             )
             session.add(admin_user)
             session.commit()
+        else:
+            if not admin_user.is_verified:
+                admin_user.is_verified = True
+                session.add(admin_user)
+                session.commit()
 
         if not session.exec(select(HealthTip)).first():
             tips = [
