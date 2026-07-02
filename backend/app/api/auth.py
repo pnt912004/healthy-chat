@@ -16,8 +16,10 @@ from ..core.config import settings
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
+from fastapi import BackgroundTasks
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-def register(body: UserRegister, session: Session = Depends(get_session)):
+def register(body: UserRegister, background_tasks: BackgroundTasks, session: Session = Depends(get_session)):
     # Kiểm tra username và email đã tồn tại chưa
     existing = session.exec(
         select(User).where(
@@ -53,8 +55,8 @@ def register(body: UserRegister, session: Session = Depends(get_session)):
     session.add(verification_token)
     session.commit()
 
-    # Gửi email
-    send_verification_email(user.email, token_str)
+    # Gửi email chạy ngầm để không bị timeout (Render free tier / SMTP chậm)
+    background_tasks.add_task(send_verification_email, user.email, token_str)
 
     return {"detail": "Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản."}
 
