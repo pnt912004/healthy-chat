@@ -13,6 +13,14 @@ def init_db():
     )
     SQLModel.metadata.create_all(engine)
 
+    from sqlmodel import text
+    try:
+        with Session(engine) as session:
+            session.exec(text("ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;"))
+            session.commit()
+    except Exception:
+        pass
+
     # Seed data nếu cần
     with Session(engine) as session:
         from sqlmodel import select
