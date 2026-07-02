@@ -10,3 +10,5 @@ google-generativeai
 python-multipart
 alembic
 email-validator
+google-auth
+requests
