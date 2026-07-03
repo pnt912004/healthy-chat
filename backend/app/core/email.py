@@ -35,8 +35,14 @@ def send_verification_email(to_email: str, token: str):
         msg.attach(part1)
         msg.attach(part2)
 
-        server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
-        server.starttls()
+        # Thêm timeout=10 để không bị treo vĩnh viễn nếu mạng bị block
+        # Thử dùng SMTP_SSL ở cổng 465 vì một số nền tảng cloud chặn cổng 587
+        if settings.SMTP_PORT == 465:
+            server = smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10)
+        else:
+            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10)
+            server.starttls()
+            
         server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
         server.sendmail(settings.SMTP_USER, to_email, msg.as_string())
         server.quit()
