@@ -58,6 +58,9 @@ def register(body: UserRegister, background_tasks: BackgroundTasks, session: Ses
     # Gửi email chạy ngầm để không bị timeout (Render free tier / SMTP chậm)
     background_tasks.add_task(send_verification_email, user.email, token_str)
 
+    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        return {"detail": f"Đăng ký thành công! Chú ý: Chưa cấu hình Email. Bạn có thể xác thực ngay bằng link: {settings.FRONTEND_URL}/verify?token={token_str}"}
+
     return {"detail": "Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản."}
 
 
